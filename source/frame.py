@@ -10,3 +10,4 @@ class DaliFrame(NamedTuple):
     priority: int = 1
     send_twice: bool = False
     status: DaliStatus = DaliStatus.OK
+    message: str = "OK"

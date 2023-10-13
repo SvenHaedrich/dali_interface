@@ -6,8 +6,9 @@ class DaliStatus:
     TIMING = 4
     INTERFACE = 5
     FAILURE = 6
-    GENERAL = 7
-    UNDEFINED = 8
+    RECOVER = 7
+    GENERAL = 8
+    UNDEFINED = 9
 
 
 """ 

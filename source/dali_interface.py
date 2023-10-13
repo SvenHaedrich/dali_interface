@@ -15,7 +15,6 @@ class DaliInterface:
 
     def __init__(self, max_queue_size: int = 40, start_receive: bool = True) -> None:
         self.queue: queue.Queue = queue.Queue(maxsize=max_queue_size)
-        self.last_error = "OK"
         self.keep_running = False
         self.__start_receive()
 
@@ -43,12 +42,15 @@ class DaliInterface:
         if not self.keep_running:
             logger.error("read thread is not running")
         try:
-            rx_frame, self.last_error = self.queue.get(block=True, timeout=timeout)
+            rx_frame = self.queue.get(block=True, timeout=timeout)
         except queue.Empty:
-            logger.debug("queue is empty, timout occured.")
-            return DaliFrame(status=DaliStatus.TIMEOUT)
-        if self.rx_frame is None:
-            return DaliFrame(status=DaliStatus.GENERAL)
+            return DaliFrame(
+                status=DaliStatus.TIMEOUT, message="queue is empty, timeout from get"
+            )
+        if rx_frame is None:
+            return DaliFrame(
+                status=DaliStatus.GENERAL, message="received None from queue"
+            )
         return rx_frame
 
     def transmit(self, frame: DaliFrame, block: bool = False, is_query=False) -> None:
