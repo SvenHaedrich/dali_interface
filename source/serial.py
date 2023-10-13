@@ -1,4 +1,5 @@
 import logging
+from typing import Tuple
 
 import serial  # type: ignore
 
@@ -20,7 +21,45 @@ class DaliSerial(DaliInterface):
         self.transparent = transparent
 
     @staticmethod
-    def parse(line: str) -> DaliFrame | None:
+    def __get_status_and_last_error(
+        length: int, data: int, loopback: bool
+    ) -> Tuple[DaliStatus, str]:
+        if 0 <= length < 0x21:
+            if loopback:
+                return DaliStatus.LOOPBACK, "LOOPBACK FRAME"
+            else:
+                return DaliStatus.FRAME, "NORMAL FRAME"
+        elif 0 <= length < 0x81:
+            return DaliStatus.OK, "OK"
+        elif length in (0x80, 0x92):
+            return DaliStatus.OK, "OK"
+        elif length == 0x81:
+            return DaliStatus.TIMEOUT, "TIMEOUT"
+        elif length == 0x82:
+            bit = data & 0x0FF
+            timer_us = (data >> 8) & 0x0FFFFF
+            return (
+                DaliStatus.TIMING,
+                f"ERROR TIMING: START - BIT: {bit} - TIME: {timer_us} USEC",
+            )
+        elif length == 0x83:
+            bit = data & 0x0FF
+            timer_us = (data >> 8) & 0x0FFFFF
+            return (
+                DaliStatus.TIMING,
+                f"ERRROR TIMING: DATA - BIT: {bit} - TIME: {timer_us} USEC",
+            )
+        elif length in (0x84, 0x85, 0x86):
+            return DaliStatus.TIMING, "ERROR: COLLISION DETECTED"
+        elif length == 0x91:
+            return DaliStatus.FAILURE, "ERROR: SYSTEM FAILURE"
+        elif length in (0xA0, 0xA1, 0xA2, 0xA3):
+            return DaliStatus.INTERFACE, "ERROR: INTERFACE"
+        else:
+            return DaliStatus.UNDEFINED, f"ERROR: CODE 0x{length:02X}"
+
+    @staticmethod
+    def parse(line: str) -> Tuple[DaliFrame | None, str]:
         try:
             start = line.find("{") + 1
             end = line.find("}")
@@ -32,14 +71,18 @@ class DaliSerial(DaliInterface):
                 loopback = False
             length = int(payload[9:11], 16)
             data = int(payload[12:20], 16)
-            return DaliFrame(
-                timestamp=timestamp,
-                length=length,
-                data=data,
-                status=DaliStatus(loopback, length, data),
+            status, message = DaliSerial.__get_status_and_last_error(length, data)
+            return (
+                DaliFrame(
+                    timestamp=timestamp,
+                    length=length,
+                    data=data,
+                    status=status,
+                ),
+                message,
             )
         except ValueError:
-            return None
+            return None, "VALUE ERROR"
 
     def read_data(self) -> None:
         line = self.port.readline().decode("utf-8").strip()
@@ -66,3 +109,23 @@ class DaliSerial(DaliInterface):
         logger.debug(f"write <{command.strip()}>")
         if block:
             self.get_next(DaliInterface.RECEIVE_TIMEOUT)
+
+    def query_reply(self, frame: DaliFrame) -> None:
+        if not self.keep_running:
+            logger.error("read thread is not running")
+        logger.debug("flush queue")
+        while not self.queue.empty():
+            self.queue.get()
+        self.transmit(frame, False, True)
+        logger.debug("read loopback")
+        self.get_next(timeout=DaliInterface.RECEIVE_TIMEOUT)
+        if (
+            not self.rx_frame
+            or self.rx_frame.status.status != DaliStatus.LOOPBACK
+            or self.rx_frame.data != frame.data
+            or self.rx_frame.length != frame.length
+        ):
+            logger.error("unexpected result when reading loopback")
+            return
+        logger.debug("read backframe")
+        self.get_next(timeout=DaliInterface.RECEIVE_TIMEOUT)

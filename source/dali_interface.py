@@ -13,10 +13,11 @@ class DaliInterface:
     RECEIVE_TIMEOUT = 1
     SLEEP_FOR_THREAD_END = 0.001
 
-    def __init__(self, max_queue_size: int = 40) -> None:
+    def __init__(self, max_queue_size: int = 40, start_receive: bool = True) -> None:
         self.queue: queue.Queue = queue.Queue(maxsize=max_queue_size)
+        self.last_error = "OK"
         self.keep_running = False
-        self.rx_frame: DaliFrame | None = None
+        self.__start_receive()
 
     def read_data(self) -> None:
         raise NotImplementedError("subclass must implement read_data")
@@ -27,7 +28,7 @@ class DaliInterface:
             self.read_data()
         logger.debug("read_worker_thread terminated")
 
-    def start_receive(self) -> None:
+    def __start_receive(self) -> None:
         if not self.keep_running:
             logger.debug("start receive")
             self.keep_running = True
@@ -37,42 +38,24 @@ class DaliInterface:
             while not self.queue.empty():
                 self.queue.get()
 
-    def get_next(self, timeout=None) -> None:
+    def get_next(self, timeout=None) -> DaliFrame:
         logger.debug("get next")
         if not self.keep_running:
             logger.error("read thread is not running")
         try:
-            self.rx_frame = self.queue.get(block=True, timeout=timeout)
+            rx_frame, self.last_error = self.queue.get(block=True, timeout=timeout)
         except queue.Empty:
             logger.debug("queue is empty, timout occured.")
-            self.rx_frame = DaliFrame(status=DaliStatus(status=DaliStatus.TIMEOUT))
-            return
+            return DaliFrame(status=DaliStatus.TIMEOUT)
         if self.rx_frame is None:
-            self.rx_frame = DaliFrame(status=DaliStatus(status=DaliStatus.GENERAL))
-            return
+            return DaliFrame(status=DaliStatus.GENERAL)
+        return rx_frame
 
     def transmit(self, frame: DaliFrame, block: bool = False, is_query=False) -> None:
         raise NotImplementedError("subclass must implement transmit")
 
-    def query_reply(self, frame: DaliFrame) -> None:
-        if not self.keep_running:
-            logger.error("read thread is not running")
-        logger.debug("flush queue")
-        while not self.queue.empty():
-            self.queue.get()
-        self.transmit(frame, False, True)
-        logger.debug("read loopback")
-        self.get_next(timeout=DaliInterface.RECEIVE_TIMEOUT)
-        if (
-            not self.rx_frame
-            or self.rx_frame.status.status != DaliStatus.LOOPBACK
-            or self.rx_frame.data != frame.data
-            or self.rx_frame.length != frame.length
-        ):
-            logger.error("unexpected result when reading loopback")
-            return
-        logger.debug("read backframe")
-        self.get_next(timeout=DaliInterface.RECEIVE_TIMEOUT)
+    def query_reply(self, reuquest: DaliFrame) -> DaliFrame:
+        raise NotImplementedError("subclass must implement query_reply")
 
     def close(self) -> None:
         logger.debug("close connection")

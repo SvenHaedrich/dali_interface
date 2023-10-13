@@ -9,6 +9,8 @@ class DaliStatus:
     GENERAL = 7
     UNDEFINED = 8
 
+
+""" 
     @staticmethod
     def built_message(message="ERROR", data=0):
         bit = data & 0x0FF
@@ -64,3 +66,4 @@ class DaliStatus:
                 self.message = message_dictionary[status]
             else:
                 self.message = f"ERROR: CODE 0x{status:02X}"
+ """

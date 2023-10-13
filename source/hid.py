@@ -234,3 +234,23 @@ class DaliUsb(DaliInterface):
         except usb.USBError as e:
             if e.errno not in (errno.ETIMEDOUT, errno.ENODEV):
                 raise e
+
+    def query_reply(self, frame: DaliFrame) -> None:
+        if not self.keep_running:
+            logger.error("read thread is not running")
+        logger.debug("flush queue")
+        while not self.queue.empty():
+            self.queue.get()
+        self.transmit(frame, False, True)
+        logger.debug("read loopback")
+        self.get_next(timeout=DaliInterface.RECEIVE_TIMEOUT)
+        if (
+            not self.rx_frame
+            or self.rx_frame.status.status != DaliStatus.LOOPBACK
+            or self.rx_frame.data != frame.data
+            or self.rx_frame.length != frame.length
+        ):
+            logger.error("unexpected result when reading loopback")
+            return
+        logger.debug("read backframe")
+        self.get_next(timeout=DaliInterface.RECEIVE_TIMEOUT)

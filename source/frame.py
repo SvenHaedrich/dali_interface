@@ -9,4 +9,4 @@ class DaliFrame(NamedTuple):
     data: int = 0
     priority: int = 1
     send_twice: bool = False
-    status: DaliStatus = DaliStatus(status=DaliStatus.OK)
+    status: DaliStatus = DaliStatus.OK
