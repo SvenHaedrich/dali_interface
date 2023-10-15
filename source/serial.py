@@ -1,5 +1,6 @@
 import logging
 from typing import Tuple
+from typeguard import typechecked
 
 import serial  # type: ignore
 
@@ -10,10 +11,25 @@ from .status import DaliStatus
 logger = logging.getLogger(__name__)
 
 
+@typechecked
 class DaliSerial(DaliInterface):
     DEFAULT_BAUDRATE = 500000
 
-    def __init__(self, portname, baudrate=DEFAULT_BAUDRATE, transparent=False) -> None:
+    def __init__(
+        self,
+        portname: str,
+        baudrate: int = DEFAULT_BAUDRATE,
+        transparent: bool = False,
+        start_receive: bool = True,
+    ) -> None:
+        """open serial port for DALI communication
+
+        Args:
+            portname (str): path to serial port
+            baudrate (int, optional): baudrate. Defaults to DEFAULT_BAUDRATE.
+            transparent (bool, optional): print echo to console. Defaults to False.
+            start_receive (bool, optional): start a receive thread. Defaults to True.
+        """
         logger.debug("open serial port")
         self.port = serial.Serial(port=portname, baudrate=baudrate, timeout=0.2)
         self.port.set_low_latency_mode(True)
@@ -60,6 +76,14 @@ class DaliSerial(DaliInterface):
 
     @staticmethod
     def parse(line: str) -> DaliFrame:
+        """parse a string into a DALI frame
+
+        Args:
+            line (str): input string, curly braces aorund DALI information required
+
+        Returns:
+            DaliFrame: DALI frame
+        """
         try:
             start = line.find("{") + 1
             end = line.find("}")
@@ -124,7 +148,7 @@ class DaliSerial(DaliInterface):
             self.queue.get()
         self.transmit(frame, False, True)
         logger.debug("read loopback")
-        self.get_next(timeout=DaliInterface.RECEIVE_TIMEOUT)
+        self.get(timeout=DaliInterface.RECEIVE_TIMEOUT)
         if (
             not self.rx_frame
             or self.rx_frame.status.status != DaliStatus.LOOPBACK
