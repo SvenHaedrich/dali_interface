@@ -24,7 +24,7 @@ Transmits a DALI frame on the bus. All 8 bit frames are treated as backward fram
 **Parameters**
 * `frame` (DaliFrame): frame to transmit
 * `block` (bool, optional): wait for the end of transmission. Defaults to False.
-* `is_query` (bool, optional): indicate that this is an query and request a reply frame. Defaults to False.
+* `is_query` (bool, optional): indicate that this is a query and request a reply frame. Defaults to False.
 
 
 ### Get
@@ -36,10 +36,10 @@ Get the next DALI frame from the input queue.
 ```
 
 **Parameters**
-* `timeout (float | None, optional): time in seconds before the call returns. Defaults to None (wait until halted).
+* `timeout` (float | None, optional): time in seconds before the call returns. Defaults to None (wait until halted).
 
 **Returns**
-* `DaliFrame``: time out is indicated in the frame status
+* `DaliFrame`: time out is indicated in the frame status
 
 
 ### Query_Reply
@@ -52,7 +52,7 @@ the replied data, or indicate a timeout.
 ```
 
 **Parameters**
-* `reuquest (DaliFrame): DALI frame to transmit
+* `reuquest` (DaliFrame): DALI frame to transmit
 
 **Returns**
 * `DaliFrame`: the received reply, if no reply was received a frame with `DaliStatus:TIMEOUT` is returned
