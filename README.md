@@ -13,7 +13,7 @@ The interface classes implement the following API functions.
 
 ### Transmit
 
-Transmits a DALI frame on the bus. All 8 bit frames are treated as backward franes.
+Transmits a DALI frame on the bus. All 8 bit frames are treated as backward frames.
 
 ```python
     def transmit(
