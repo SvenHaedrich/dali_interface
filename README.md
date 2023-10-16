@@ -11,7 +11,7 @@ A common API for different hardware realizations of a DALI interface.
 
 The interface classes implement the following API functions.
 
-### transmit
+### Transmit
 
 Transmits a DALI frame on the bus. All 8 bit frames are treated as backward franes.
 
