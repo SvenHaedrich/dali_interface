@@ -73,7 +73,7 @@ class DaliInterface:
         return rx_frame
 
     def transmit(self, frame: DaliFrame, block: bool = False, is_query=False) -> None:
-        """transmit a DALI frame
+        """transmit a DALI frame. All 8 bit frames are treated as backward franes.
 
         Args:
             frame (DaliFrame): frame to transmit
@@ -81,13 +81,20 @@ class DaliInterface:
                 Defaults to False.
             is_query (bool, optional): indicate that this is an query and
                 request a reply frame. Defaults to False.
-
-        Raises:
-            NotImplementedError
         """
         raise NotImplementedError("subclass must implement transmit")
 
     def query_reply(self, reuquest: DaliFrame) -> DaliFrame:
+        """transmit a DALI frame that is requesting a reply. Wait for either
+            the replied data, or indicate a timeout.
+
+        Args:
+            reuquest (DaliFrame): frame to transmit
+
+        Returns:
+            DaliFrame: the received reply, if no reply was received a
+                frame with DaliStatus:TIMEOUT is returned
+        """
         raise NotImplementedError("subclass must implement query_reply")
 
     def close(self) -> None:
