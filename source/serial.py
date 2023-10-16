@@ -1,5 +1,5 @@
 import logging
-from typing import Tuple
+from typing import Tuple, Final
 from typeguard import typechecked
 
 import serial  # type: ignore
@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 @typechecked
 class DaliSerial(DaliInterface):
-    DEFAULT_BAUDRATE = 500000
+    DEFAULT_BAUDRATE: Final[int] = 500000
 
     def __init__(
         self,
@@ -39,7 +39,7 @@ class DaliSerial(DaliInterface):
     @staticmethod
     def __get_status_and_last_error(
         length: int, data: int, loopback: bool
-    ) -> Tuple[DaliStatus, str]:
+    ) -> Tuple[int, str]:
         if 0 <= length < 0x21:
             if loopback:
                 return DaliStatus.LOOPBACK, "LOOPBACK FRAME"
@@ -122,7 +122,9 @@ class DaliSerial(DaliInterface):
             logger.debug(f"received line <{line}> from serial")
             self.queue.put(self.parse(line))
 
-    def transmit(self, frame: DaliFrame, block: bool = False, is_query=False) -> None:
+    def transmit(
+        self, frame: DaliFrame, block: bool = False, is_query: bool = False
+    ) -> None:
         command_byte = "Q" if is_query else "S"
         if frame.send_twice:
             command = (
@@ -140,7 +142,7 @@ class DaliSerial(DaliInterface):
         if block:
             self.get_next(DaliInterface.RECEIVE_TIMEOUT)
 
-    def query_reply(self, frame: DaliFrame) -> None:
+    def query_reply(self, frame: DaliFrame) -> DaliFrame:
         if not self.keep_running:
             logger.error("read thread is not running")
         logger.debug("flush queue")
@@ -148,14 +150,13 @@ class DaliSerial(DaliInterface):
             self.queue.get()
         self.transmit(frame, False, True)
         logger.debug("read loopback")
-        self.get(timeout=DaliInterface.RECEIVE_TIMEOUT)
+        loopback = self.get(timeout=DaliInterface.RECEIVE_TIMEOUT)
         if (
-            not self.rx_frame
-            or self.rx_frame.status.status != DaliStatus.LOOPBACK
-            or self.rx_frame.data != frame.data
-            or self.rx_frame.length != frame.length
+            loopback.status != DaliStatus.LOOPBACK
+            or loopback.data != frame.data
+            or loopback.length != frame.length
         ):
             logger.error("unexpected result when reading loopback")
-            return
+            return loopback
         logger.debug("read backframe")
-        self.get_next(timeout=DaliInterface.RECEIVE_TIMEOUT)
+        return self.get(timeout=DaliInterface.RECEIVE_TIMEOUT)
