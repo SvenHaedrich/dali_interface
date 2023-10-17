@@ -140,7 +140,7 @@ class DaliSerial(DaliInterface):
         self.port.write(command.encode("utf-8"))
         logger.debug(f"write <{command.strip()}>")
         if block:
-            self.get_next(DaliInterface.RECEIVE_TIMEOUT)
+            self.get(DaliInterface.RECEIVE_TIMEOUT)
 
     def query_reply(self, frame: DaliFrame) -> DaliFrame:
         if not self.keep_running:
