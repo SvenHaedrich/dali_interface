@@ -122,23 +122,18 @@ class DaliSerial(DaliInterface):
             logger.debug(f"received line <{line}> from serial")
             self.queue.put(self.parse(line))
 
-    def transmit(
-        self, frame: DaliFrame, block: bool = False, is_query: bool = False
-    ) -> None:
-        command_byte = "Q" if is_query else "S"
-        if frame.send_twice:
-            command = (
-                f"{command_byte}{frame.priority} {frame.length:X}+{frame.data:X}\r"
-            )
+    @staticmethod
+    def __built_command_string(frame: DaliFrame, is_query: bool) -> str:
+        if frame.length == 8:
+            return f"Y{frame.data:X}\r"
         else:
-            if frame.length == 8:
-                command = f"Y{frame.data:X}\r"
-            else:
-                command = (
-                    f"{command_byte}{frame.priority} {frame.length:X} {frame.data:X}\r"
-                )
-        self.port.write(command.encode("utf-8"))
-        logger.debug(f"write <{command.strip()}>")
+            command = "Q" if is_query else "S"
+            twice = "+" if frame.send_twice else " "
+            return f"{command}{frame.priority} {frame.length:X}{twice}{frame.data:X}\r"
+
+    def transmit(self, frame: DaliFrame, block: bool = False) -> None:
+        command_string = DaliSerial.__built_command_string(frame, False)
+        self.port.write(command_string.encode("utf-8"))
         if block:
             self.get(DaliInterface.RECEIVE_TIMEOUT)
 
@@ -148,8 +143,8 @@ class DaliSerial(DaliInterface):
         logger.debug("flush queue")
         while not self.queue.empty():
             self.queue.get()
-        self.transmit(frame, False, True)
-        logger.debug("read loopback")
+        command_string = DaliSerial.__built_command_string(frame, True)
+        self.port.write(command_string.encode("utf-8"))
         loopback = self.get(timeout=DaliInterface.RECEIVE_TIMEOUT)
         if (
             loopback.status != DaliStatus.LOOPBACK

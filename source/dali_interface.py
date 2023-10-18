@@ -72,15 +72,13 @@ class DaliInterface:
         logger.debug(f"return {rx_frame.message} - {rx_frame.length} - {rx_frame.data}")
         return rx_frame
 
-    def transmit(self, frame: DaliFrame, block: bool = False, is_query=False) -> None:
+    def transmit(self, frame: DaliFrame, block: bool = False) -> None:
         """transmit a DALI frame. All 8 bit frames are treated as backward franes.
 
         Args:
             frame (DaliFrame): frame to transmit
             block (bool, optional): wait for the end of transmission.
                 Defaults to False.
-            is_query (bool, optional): indicate that this is an query and
-                request a reply frame. Defaults to False.
         """
         raise NotImplementedError("subclass must implement transmit")
 

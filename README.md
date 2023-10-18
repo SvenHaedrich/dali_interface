@@ -16,15 +16,12 @@ The interface classes implement the following API functions.
 Transmits a DALI frame on the bus. All 8 bit frames are treated as backward frames.
 
 ```python
-    def transmit(
-        self, frame: DaliFrame, block: bool = False, is_query: bool = False
-    ) -> None:
+    def transmit(self, frame: DaliFrame, block: bool = False) -> None:
 ```
 
 **Parameters**
 * `frame` (DaliFrame): frame to transmit
 * `block` (bool, optional): wait for the end of transmission. Defaults to False.
-* `is_query` (bool, optional): indicate that this is a query and request a reply frame. Defaults to False.
 
 
 ### Get

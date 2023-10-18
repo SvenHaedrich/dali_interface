@@ -11,19 +11,14 @@ class DaliMock(DaliInterface):
         super().__init__(start_receive=False)
         logger.debug("initialize mock interface")
 
-    def transmit(
-        self, frame: DaliFrame, block: bool = False, is_query: bool = False
-    ) -> None:
-        command_byte = "Q" if is_query else "S"
-        if frame.send_twice:
-            command = (
-                f"{command_byte}{frame.priority} {frame.length:X}+{frame.data:X}\r"
-            )
+    @staticmethod
+    def __built_command_string(frame: DaliFrame, is_query: bool) -> str:
+        if frame.length == 8:
+            return f"Y{frame.data:X}\r"
         else:
-            if frame.length == 8:
-                command = f"Y{frame.data:X}\r"
-            else:
-                command = (
-                    f"{command_byte}{frame.priority} {frame.length:X} {frame.data:X}\r"
-                )
-        print(command)
+            command = "Q" if is_query else "S"
+            twice = "+" if frame.send_twice else " "
+            return f"{command}{frame.priority} {frame.length:X}{twice}{frame.data:X}\r"
+
+    def transmit(self, frame: DaliFrame, block: bool = False) -> None:
+        print(DaliMock.__built_command_string(frame, False))

@@ -126,9 +126,7 @@ class DaliUsb(DaliInterface):
         self.ep_write = None
         raise usb.core.USBError("No suitable USB device found!")
 
-    def transmit(
-        self, frame: DaliFrame, block: bool = False, is_query: bool = False
-    ) -> None:
+    def transmit(self, frame: DaliFrame, block: bool = False) -> None:
         command = self._USB_CMD_SEND
         self.send_sequence_number = (self.send_sequence_number + 1) & 0xFF
         sequence = self.send_sequence_number
