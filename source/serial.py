@@ -14,6 +14,23 @@ logger = logging.getLogger(__name__)
 @typechecked
 class DaliSerial(DaliInterface):
     DEFAULT_BAUDRATE: Final[int] = 500000
+    # see: https://github.com/SvenHaedrich/dali_usb_lpc1114/blob/main/doc/messages.md
+    _MAX_BIT_LENGTH: Final[int] = 32
+    _TIMEOUT: Final[int] = 0x81
+    _BAD_START_BIT_TIMING: Final[int] = 0x82
+    _BAD_DATA_BIT_TIMING: Final[int] = 0x83
+    _COLLISION_LOOPBACK: Final[int] = 0x84
+    _COLLISION_NO_CHANGE: Final[int] = 0x85
+    _COLLISION_WRONG_STATE: Final[int] = 0x86
+    _SETTLING_TIME: Final[int] = 0x87
+    _SYSTEM_IDLE: Final[int] = 0x90
+    _SYSTEM_FAILURE: Final[int] = 0x91
+    _SYSTEM_RECOVERED: Final[int] = 0x92
+    _COMMAND_NOT_PROCESSED: Final[int] = 0xA0
+    _COMMAND_BAD_ARGUMENT: Final[int] = 0xA1
+    _QUEUE_IS_FULL: Final[int] = 0xA2
+    _COMMAND_BAD: Final[int] = 0xA3
+    _BUFFER_OVERFLOW: Final[int] = 0xA4
 
     def __init__(
         self,
@@ -40,36 +57,45 @@ class DaliSerial(DaliInterface):
     def __get_status_and_last_error(
         length: int, data: int, loopback: bool
     ) -> Tuple[int, str]:
-        if 0 <= length < 0x21:
+        if 0 <= length <= DaliSerial._MAX_BIT_LENGTH:
             if loopback:
                 return DaliStatus.LOOPBACK, "LOOPBACK FRAME"
             else:
                 return DaliStatus.FRAME, "NORMAL FRAME"
-        elif 0 <= length < 0x81:
+        elif length < DaliSerial._TIMEOUT:
             return DaliStatus.OK, "OK"
-        elif length == 0x81:
+        elif length == DaliSerial._TIMEOUT:
             return DaliStatus.TIMEOUT, "TIMEOUT"
-        elif length == 0x82:
+        elif length == DaliSerial._BAD_START_BIT_TIMING:
             bit = data & 0x0FF
             timer_us = (data >> 8) & 0x0FFFFF
             return (
                 DaliStatus.TIMING,
                 f"ERROR TIMING: START - BIT: {bit} - TIME: {timer_us} USEC",
             )
-        elif length == 0x83:
+        elif length == DaliSerial._BAD_DATA_BIT_TIMING:
             bit = data & 0x0FF
             timer_us = (data >> 8) & 0x0FFFFF
             return (
                 DaliStatus.TIMING,
                 f"ERRROR TIMING: DATA - BIT: {bit} - TIME: {timer_us} USEC",
             )
-        elif length in (0x84, 0x85, 0x86):
+        elif length in (
+            DaliSerial._COLLISION_LOOPBACK,
+            DaliSerial._COLLISION_NO_CHANGE,
+            DaliSerial._COLLISION_WRONG_STATE,
+        ):
             return DaliStatus.TIMING, "ERROR: COLLISION DETECTED"
-        elif length == 0x91:
+        elif length == DaliSerial._SYSTEM_FAILURE:
             return DaliStatus.FAILURE, "ERROR: SYSTEM FAILURE"
-        elif length == 0x92:
+        elif length == DaliSerial._SYSTEM_RECOVERED:
             return DaliStatus.RECOVER, "SYSTEM RECOVER"
-        elif length in (0xA0, 0xA1, 0xA2, 0xA3):
+        elif length in (
+            DaliSerial._COMMAND_NOT_PROCESSED,
+            DaliSerial._COMMAND_BAD_ARGUMENT,
+            DaliSerial._QUEUE_IS_FULL,
+            DaliSerial._COMMAND_BAD,
+        ):
             return DaliStatus.INTERFACE, "ERROR: INTERFACE"
         else:
             return DaliStatus.UNDEFINED, f"ERROR: CODE 0x{length:02X}"
