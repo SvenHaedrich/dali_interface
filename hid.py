@@ -234,11 +234,7 @@ class DaliUsb(DaliInterface):
                 raise e
 
     def query_reply(self, frame: DaliFrame) -> DaliFrame:
-        if not self.keep_running:
-            logger.error("read thread is not running")
-        logger.debug("flush queue")
-        while not self.queue.empty():
-            self.queue.get()
+        self.flush_queue()
         self.transmit(frame, False, True)
         logger.debug("read loopback")
         loopback = self.get(timeout=DaliInterface.RECEIVE_TIMEOUT)

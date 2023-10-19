@@ -164,11 +164,7 @@ class DaliSerial(DaliInterface):
             self.get(DaliInterface.RECEIVE_TIMEOUT)
 
     def query_reply(self, frame: DaliFrame) -> DaliFrame:
-        if not self.keep_running:
-            logger.error("read thread is not running")
-        logger.debug("flush queue")
-        while not self.queue.empty():
-            self.queue.get()
+        self.flush_queue()
         command_string = DaliSerial.__built_command_string(frame, True)
         self.port.write(command_string.encode("utf-8"))
         loopback = self.get(timeout=DaliInterface.RECEIVE_TIMEOUT)

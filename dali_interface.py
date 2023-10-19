@@ -30,6 +30,10 @@ class DaliInterface:
     def read_data(self) -> None:
         raise NotImplementedError("subclass must implement read_data")
 
+    def flush_queue(self) -> None:
+        while not self.queue.empty():
+            self.queue.get()
+
     def __read_worker_thread(self):
         logger.debug("read_worker_thread started")
         while self.keep_running:
@@ -43,11 +47,11 @@ class DaliInterface:
             self.thread = threading.Thread(target=self.__read_worker_thread, args=())
             self.thread.daemon = True
             self.thread.start()
-            while not self.queue.empty():
-                self.queue.get()
+            self.flush_queue()
 
     def get(self, timeout: float | None = None) -> DaliFrame:
-        """get the next DALI frame from the interface
+        """get the next DALI frame from the interface. Function blocks until a frame
+            is received or timeout occurs
 
         Args:
             timeout (float | None, optional): time in seconds before the call returns.
@@ -58,7 +62,7 @@ class DaliInterface:
         """
         logger.debug("get")
         if not self.keep_running:
-            logger.error("read thread is not running")
+            raise Exception("read thread is not running")
         try:
             rx_frame = self.queue.get(block=True, timeout=timeout)
         except queue.Empty:
