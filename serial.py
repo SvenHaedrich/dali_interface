@@ -51,7 +51,7 @@ class DaliSerial(DaliInterface):
         self.port = serial.Serial(port=portname, baudrate=baudrate, timeout=0.2)
         self.port.set_low_latency_mode(True)
         self.transparent = transparent
-        super().__init__()
+        super().__init__(start_receive=start_receive)
 
     @staticmethod
     def __get_status_and_last_error(

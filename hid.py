@@ -63,7 +63,12 @@ class DaliUsb(DaliInterface):
     _USB_STATUS_DSI: Final[int] = 0x05
     _USB_STATUS_DALI: Final[int] = 0x06
 
-    def __init__(self, vendor: int = _USB_VENDOR, product: int = _USB_PRODUCT) -> None:
+    def __init__(
+        self,
+        vendor: int = _USB_VENDOR,
+        product: int = _USB_PRODUCT,
+        start_receive: bool = True,
+    ) -> None:
         # lookup devices by _USB_VENDOR and _USB_PRODUCT
         self.interface = 0
         self.send_sequence_number = 1
@@ -112,7 +117,7 @@ class DaliUsb(DaliInterface):
                 continue
 
             # read pending messages and discard
-            super().__init__()
+            super().__init__(start_receive=start_receive)
             try:
                 while True:
                     self.ep_read.read(self.ep_read.wMaxPacketSize, timeout=10)  # type: ignore
