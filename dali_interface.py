@@ -40,8 +40,11 @@ class DaliInterface:
         """initialize DALI interfcae
 
         Args:
-            max_queue_size (int, optional): _description_. Defaults to 40.
-            start_receive (bool, optional): _description_. Defaults to True.
+            max_queue_size (int, optional): Length of input queue for frames read from DALI bus.
+                Defaults to 40.
+            start_receive (bool, optional): Start a thread that reads DAL frames from the bus
+                and transfers them into the input queue.
+                Defaults to True.
         """
         self.queue: queue.Queue = queue.Queue(maxsize=max_queue_size)
         self.keep_running = False
