@@ -86,12 +86,12 @@ class DaliInterface:
         """
         raise NotImplementedError("subclass must implement transmit")
 
-    def query_reply(self, reuquest: DaliFrame) -> DaliFrame:
+    def query_reply(self, request: DaliFrame) -> DaliFrame:
         """transmit a DALI frame that is requesting a reply. Wait for either
             the replied data, or indicate a timeout.
 
         Args:
-            reuquest (DaliFrame): frame to transmit
+            request (DaliFrame): frame to transmit
 
         Returns:
             DaliFrame: the received reply, if no reply was received a

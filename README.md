@@ -45,11 +45,11 @@ Transmit a DALI frame that is requesting a reply. Wait for either
 the replied data, or indicate a timeout.
 
 ```python
-    def query_reply(self, reuquest: DaliFrame) -> DaliFrame:
+    def query_reply(self, request: DaliFrame) -> DaliFrame:
 ```
 
 **Parameters**
-* `reuquest` (DaliFrame): DALI frame to transmit
+* `request` (DaliFrame): DALI frame to transmit
 
 **Returns**
 * `DaliFrame`: the received reply, if no reply was received a frame with `DaliStatus:TIMEOUT` is returned
