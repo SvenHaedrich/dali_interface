@@ -2,12 +2,33 @@ import logging
 import queue
 import threading
 import time
+from typing import Final, NamedTuple
 from typeguard import typechecked
 
-from .frame import DaliFrame
-from .status import DaliStatus
-
 logger = logging.getLogger(__name__)
+
+
+class DaliStatus:
+    OK: Final[int] = 0
+    LOOPBACK: Final[int] = 1
+    FRAME: Final[int] = 2
+    TIMEOUT: Final[int] = 3
+    TIMING: Final[int] = 4
+    INTERFACE: Final[int] = 5
+    FAILURE: Final[int] = 6
+    RECOVER: Final[int] = 7
+    GENERAL: Final[int] = 8
+    UNDEFINED: Final[int] = 9
+
+
+class DaliFrame(NamedTuple):
+    timestamp: float = 0
+    length: int = 0
+    data: int = 0
+    priority: int = 2
+    send_twice: bool = False
+    status: int = DaliStatus.OK
+    message: str = "OK"
 
 
 @typechecked
@@ -19,8 +40,11 @@ class DaliInterface:
         """initialize DALI interfcae
 
         Args:
-            max_queue_size (int, optional): _description_. Defaults to 40.
-            start_receive (bool, optional): _description_. Defaults to True.
+            max_queue_size (int, optional): Length of input queue for frames read from DALI bus.
+                Defaults to 40.
+            start_receive (bool, optional): Start a thread that reads DAL frames from the bus
+                and transfers them into the input queue.
+                Defaults to True.
         """
         self.queue: queue.Queue = queue.Queue(maxsize=max_queue_size)
         self.keep_running = False
@@ -86,12 +110,12 @@ class DaliInterface:
         """
         raise NotImplementedError("subclass must implement transmit")
 
-    def query_reply(self, reuquest: DaliFrame) -> DaliFrame:
+    def query_reply(self, request: DaliFrame) -> DaliFrame:
         """transmit a DALI frame that is requesting a reply. Wait for either
             the replied data, or indicate a timeout.
 
         Args:
-            reuquest (DaliFrame): frame to transmit
+            request (DaliFrame): frame to transmit
 
         Returns:
             DaliFrame: the received reply, if no reply was received a

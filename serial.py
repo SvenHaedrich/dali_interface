@@ -4,9 +4,7 @@ from typeguard import typechecked
 
 import serial  # type: ignore
 
-from .dali_interface import DaliInterface
-from .frame import DaliFrame
-from .status import DaliStatus
+from .dali_interface import DaliInterface, DaliFrame, DaliStatus
 
 logger = logging.getLogger(__name__)
 

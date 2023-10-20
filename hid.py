@@ -7,9 +7,7 @@ import usb
 from typing import Final
 from typeguard import typechecked
 
-from .dali_interface import DaliInterface
-from .frame import DaliFrame
-from .status import DaliStatus
+from .dali_interface import DaliInterface, DaliFrame, DaliStatus
 
 logger = logging.getLogger(__name__)
 
@@ -180,9 +178,10 @@ class DaliUsb(DaliInterface):
             if not self.keep_running:
                 raise Exception("receive must be active for blocking call to transmit.")
             else:
-                self.get_next()
-                if self.send_sequence_number != self.receive_sequence_number:
-                    raise Exception("expected same sequence number.")
+                while True:
+                    self.get()
+                    if self.receive_sequence_number >= self.send_sequence_number:
+                        return
 
     def close(self) -> None:
         super().close()
@@ -202,7 +201,6 @@ class DaliUsb(DaliInterface):
                     status = DaliStatus.FRAME
                     length = 8
                     dali_data = usb_data[5]
-                    logger.debug(f"backframe at {time.time()}")
                 elif read_type == self._USB_READ_TYPE_16BIT:
                     status = DaliStatus.FRAME
                     length = 16
@@ -240,11 +238,6 @@ class DaliUsb(DaliInterface):
 
     def query_reply(self, frame: DaliFrame) -> DaliFrame:
         self.flush_queue()
-        self.transmit(frame, False, True)
-        logger.debug("read loopback")
-        loopback = self.get(timeout=DaliInterface.RECEIVE_TIMEOUT)
-        if loopback.data != frame.data or loopback.length != frame.length:
-            logger.error("unexpected result when reading loopback")
-            return loopback
+        self.transmit(frame, True)
         logger.debug("read backframe")
         return self.get(timeout=DaliInterface.RECEIVE_TIMEOUT)
