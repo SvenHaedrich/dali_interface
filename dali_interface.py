@@ -2,12 +2,33 @@ import logging
 import queue
 import threading
 import time
+from typing import Final, NamedTuple
 from typeguard import typechecked
 
-from .frame import DaliFrame
-from .status import DaliStatus
-
 logger = logging.getLogger(__name__)
+
+
+class DaliStatus:
+    OK: Final[int] = 0
+    LOOPBACK: Final[int] = 1
+    FRAME: Final[int] = 2
+    TIMEOUT: Final[int] = 3
+    TIMING: Final[int] = 4
+    INTERFACE: Final[int] = 5
+    FAILURE: Final[int] = 6
+    RECOVER: Final[int] = 7
+    GENERAL: Final[int] = 8
+    UNDEFINED: Final[int] = 9
+
+
+class DaliFrame(NamedTuple):
+    timestamp: float = 0
+    length: int = 0
+    data: int = 0
+    priority: int = 2
+    send_twice: bool = False
+    status: int = DaliStatus.OK
+    message: str = "OK"
 
 
 @typechecked

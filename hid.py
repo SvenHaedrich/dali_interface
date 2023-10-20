@@ -7,9 +7,7 @@ import usb
 from typing import Final
 from typeguard import typechecked
 
-from .dali_interface import DaliInterface
-from .frame import DaliFrame
-from .status import DaliStatus
+from .dali_interface import DaliInterface, DaliFrame, DaliStatus
 
 logger = logging.getLogger(__name__)
 
