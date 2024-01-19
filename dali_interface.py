@@ -97,7 +97,9 @@ class DaliInterface:
             return DaliFrame(
                 status=DaliStatus.GENERAL, message="received None from queue"
             )
-        logger.debug(f"return {rx_frame.message} - {rx_frame.length} - {rx_frame.data}")
+        logger.debug(
+            f"return {rx_frame.message} - {rx_frame.length} - {rx_frame.data:x}"
+        )
         return rx_frame
 
     def transmit(self, frame: DaliFrame, block: bool = False) -> None:
