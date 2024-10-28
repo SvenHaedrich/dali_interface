@@ -1,6 +1,6 @@
 import logging
 
-from .dali_interface import DaliInterface, DaliFrame
+from .dali_interface import DaliFrame, DaliInterface
 
 logger = logging.getLogger(__name__)
 

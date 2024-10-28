@@ -2,12 +2,12 @@ import errno
 import logging
 import struct
 import time
+from typing import Final
 
 import usb
-from typing import Final
 from typeguard import typechecked
 
-from .dali_interface import DaliInterface, DaliFrame, DaliStatus
+from .dali_interface import DaliFrame, DaliInterface, DaliStatus
 
 logger = logging.getLogger(__name__)
 

@@ -1,10 +1,10 @@
 import logging
-from typing import Tuple, Final
-from typeguard import typechecked
+from typing import Final, Tuple
 
 import serial  # type: ignore
+from typeguard import typechecked
 
-from .dali_interface import DaliInterface, DaliFrame, DaliStatus
+from .dali_interface import DaliFrame, DaliInterface, DaliStatus
 
 logger = logging.getLogger(__name__)
 

@@ -3,6 +3,7 @@ import queue
 import threading
 import time
 from typing import Final, NamedTuple
+
 from typeguard import typechecked
 
 logger = logging.getLogger(__name__)
