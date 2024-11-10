@@ -1,19 +1,23 @@
+"""Specific implementation of the DALI interface for Lunatone USB HID device."""
+
 import errno
 import logging
 import struct
 import time
+from typing import Final
 
 import usb
-from typing import Final
 from typeguard import typechecked
 
-from .dali_interface import DaliInterface, DaliFrame, DaliStatus
+from .dali_interface import DaliFrame, DaliInterface, DaliStatus
 
 logger = logging.getLogger(__name__)
 
 
 @typechecked
 class DaliUsb(DaliInterface):
+    """Class for USB connected DALI interface."""
+
     _USB_VENDOR: Final[int] = 0x17B5
     _USB_PRODUCT: Final[int] = 0x0020
 
@@ -67,13 +71,15 @@ class DaliUsb(DaliInterface):
         product: int = _USB_PRODUCT,
         start_receive: bool = True,
     ) -> None:
+        """Initialise DALI USB interface."""
         # lookup devices by _USB_VENDOR and _USB_PRODUCT
         self.interface = 0
         self.send_sequence_number = 1
-        self.receive_sequence_number = None
+        self.receive_sequence_number = 0
+        self.last_transmit: int | None = None
 
         logger.debug("try to discover DALI interfaces")
-        devices = [dev for dev in usb.core.find(find_all=True, idVendor=vendor, idProduct=product)]  # type: ignore
+        devices = list(usb.core.find(find_all=True, idVendor=vendor, idProduct=product))
 
         # if not found
         if devices:
@@ -121,7 +127,7 @@ class DaliUsb(DaliInterface):
                     self.ep_read.read(self.ep_read.wMaxPacketSize, timeout=10)  # type: ignore
                     logger.info("DALI interface - disregard pending messages")
             except Exception:
-                pass  # nosec B110
+                pass
             return
         # cleanup
         self.device = None
@@ -130,6 +136,7 @@ class DaliUsb(DaliInterface):
         raise usb.core.USBError("No suitable USB device found!")
 
     def transmit(self, frame: DaliFrame, block: bool = False) -> None:
+        """Transmit a DALI frame via USB interface."""
         command = self._USB_CMD_SEND
         self.send_sequence_number = (self.send_sequence_number + 1) & 0xFF
         sequence = self.send_sequence_number
@@ -177,17 +184,18 @@ class DaliUsb(DaliInterface):
         if block:
             if not self.keep_running:
                 raise Exception("receive must be active for blocking call to transmit.")
-            else:
-                while True:
-                    self.get()
-                    if self.receive_sequence_number >= self.send_sequence_number:
-                        return
+            while True:
+                self.get()
+                if self.receive_sequence_number >= self.send_sequence_number:
+                    return
 
     def close(self) -> None:
+        """Close the connection to USB DALI interface."""
         super().close()
         usb.util.dispose_resources(self.device)
 
     def read_data(self) -> None:
+        """Read frame or event from USB DALI interface-"""
         try:
             usb_data = self.ep_read.read(self.ep_read.wMaxPacketSize, timeout=100)
             if usb_data:
@@ -236,8 +244,9 @@ class DaliUsb(DaliInterface):
             if e.errno not in (errno.ETIMEDOUT, errno.ENODEV):
                 raise e
 
-    def query_reply(self, frame: DaliFrame) -> DaliFrame:
+    def query_reply(self, request: DaliFrame) -> DaliFrame:
+        """Send DALI frame and request a reply frame."""
         self.flush_queue()
-        self.transmit(frame, True)
+        self.transmit(request, True)
         logger.debug("read backframe")
         return self.get(timeout=DaliInterface.RECEIVE_TIMEOUT)

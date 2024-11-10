@@ -1,23 +1,36 @@
-import logging
+"""Mock DALI interface for testing."""
 
-from .dali_interface import DaliInterface, DaliFrame
+import logging
+import time
+
+from .dali_interface import DaliFrame, DaliInterface, DaliStatus
 
 logger = logging.getLogger(__name__)
 
 
 class DaliMock(DaliInterface):
+    """Mock class for DALI interface."""
+
     def __init__(self):
+        """Initialize DALI mock interface."""
         super().__init__(start_receive=False)
         logger.debug("initialize mock interface")
 
-    @staticmethod
-    def __built_command_string(frame: DaliFrame, is_query: bool) -> str:
-        if frame.length == 8:
-            return f"Y{frame.data:X}\r"
-        else:
-            command = "Q" if is_query else "S"
-            twice = "+" if frame.send_twice else " "
-            return f"{command}{frame.priority} {frame.length:X}{twice}{frame.data:X}\r"
-
     def transmit(self, frame: DaliFrame, block: bool = False) -> None:
-        print(DaliMock.__built_command_string(frame, False))
+        """Mock transmission of DALI frame."""
+        print(DaliInterface.build_command_string(frame, False))
+
+    def query_reply(self, request: DaliFrame) -> DaliFrame:
+        """Mock DALI frame query."""
+        print(DaliInterface.build_command_string(request, False))
+        return DaliFrame(
+            timestamp=time.time(),
+            length=0,
+            data=0,
+            status=DaliStatus.TIMEOUT,
+            message="mock timeout",
+        )
+
+    def read_data(self) -> None:
+        """Stub implementation."""
+        raise NotImplementedError("Mock class has no read implementation")
