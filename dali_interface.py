@@ -61,6 +61,14 @@ class DaliInterface:
         if start_receive:
             self.__start_receive()
 
+    def __enter__(self):
+        """Access object via context manager"""
+        return self
+
+    def __exit__(self, exc_type, exc_val, traceback):
+        """Close object via context manager"""
+        self.close()
+
     def read_data(self) -> None:
         """Stub for reading data needs to be overwritten by an implementation."""
         raise NotImplementedError("subclass must implement read_data")
