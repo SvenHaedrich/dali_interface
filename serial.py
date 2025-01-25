@@ -160,7 +160,7 @@ class DaliSerial(DaliInterface):
             or loopback.data != frame.data
             or loopback.length != loopback.length
         ):
-            logger.error(f"unexpected readback for frame {frame.data:X}")
+            logger.error(f"unexpected loopback for frame {frame.data:X}")
 
     def transmit(self, frame: DaliFrame, block: bool = False) -> None:
         """Transmit a DALI frame via serial connector."""
