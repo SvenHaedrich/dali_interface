@@ -153,25 +153,31 @@ class DaliSerial(DaliInterface):
             logger.debug(f"received line <{line}> from serial")
             self.queue.put(self.parse(line))
 
+    def _check_loopback(self, frame: DaliFrame) -> None:
+        loopback = self.get(DaliInterface.RECEIVE_TIMEOUT)
+        if (
+            loopback.status != DaliStatus.LOOPBACK
+            or loopback.data != frame.data
+            or loopback.length != loopback.length
+        ):
+            logger.error(f"unexpected readback for frame {frame.data:X}")
+
     def transmit(self, frame: DaliFrame, block: bool = False) -> None:
         """Transmit a DALI frame via serial connector."""
         command_string = DaliSerial.build_command_string(frame, False)
         self.port.write(command_string.encode("utf-8"))
         if block:
-            self.get(DaliInterface.RECEIVE_TIMEOUT)
+            self._check_loopback(frame)
+            if frame.send_twice:
+                self._check_loopback(frame)
 
     def query_reply(self, request: DaliFrame) -> DaliFrame:
         """Transmit a request DALI frame and wait for a reply frame."""
         self.flush_queue()
         command_string = DaliSerial.build_command_string(request, True)
         self.port.write(command_string.encode("utf-8"))
-        loopback = self.get(timeout=DaliInterface.RECEIVE_TIMEOUT)
-        if (
-            loopback.status != DaliStatus.LOOPBACK
-            or loopback.data != request.data
-            or loopback.length != request.length
-        ):
-            logger.error("unexpected result when reading loopback")
-            return loopback
+        self._check_loopback(request)
+        if request.send_twice:
+            self._check_loopback(request)
         logger.debug("read backframe")
         return self.get(timeout=DaliInterface.RECEIVE_TIMEOUT)
