@@ -65,6 +65,9 @@ class DaliUsb(DaliInterface):
     _USB_STATUS_DSI: Final[int] = 0x05
     _USB_STATUS_DALI: Final[int] = 0x06
 
+    _USB_POWER_OFF: Final[int] = 0x00
+    _USB_POWER_ON: Final[int] = 0x01
+
     def __init__(
         self,
         vendor: int = _USB_VENDOR,
@@ -134,6 +137,19 @@ class DaliUsb(DaliInterface):
         self.ep_read = None
         self.ep_write = None
         raise usb.core.USBError("No suitable USB device found!")
+
+    def power(self, power: bool = False) -> None:
+        """Control a built in power supply, requires a Lunatone DALI USB 30 mA interface"""
+        logger.debug("control optional power supply")
+        command = self._USB_CMD_POWER
+        buffer = struct.pack(
+            "BB" + (64 - 2) * "x",
+            command,
+            self._USB_POWER_ON if power else self._USB_POWER_OFF,
+        )
+        bytes_written = self.ep_write.write(buffer)  # type: ignore
+        if bytes_written != 64:
+            raise Exception("written {bytes_written} bytes, expected 64.")
 
     def transmit(self, frame: DaliFrame, block: bool = False) -> None:
         """Transmit a DALI frame via USB interface."""

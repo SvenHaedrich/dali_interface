@@ -3,7 +3,9 @@
 A common API for different hardware realizations of a DALI interface.
 
 ## Supported Hardware
+
 * Lunatone 241 389 23DO
+* Lunatone 241 389 23-30
 * BEGA 71024
 * Serial based SevenLab Hardware
 
@@ -20,9 +22,9 @@ Transmits a DALI frame on the bus. All 8 bit frames are treated as backward fram
 ```
 
 **Parameters**
+
 * `frame` (DaliFrame): frame to transmit
 * `block` (bool, optional): wait for the end of transmission. Defaults to False.
-
 
 ### Get
 
@@ -33,11 +35,12 @@ Get the next DALI frame from the input queue.
 ```
 
 **Parameters**
+
 * `timeout` (float | None, optional): time in seconds before the call returns. Defaults to None (wait until halted).
 
 **Returns**
-* `DaliFrame`: time out is indicated in the frame status
 
+* `DaliFrame`: time out is indicated in the frame status
 
 ### Query_Reply
 
@@ -49,11 +52,24 @@ the replied data, or indicate a timeout.
 ```
 
 **Parameters**
+
 * `request` (DaliFrame): DALI frame to transmit
 
 **Returns**
+
 * `DaliFrame`: the received reply, if no reply was received a frame with `DaliStatus:TIMEOUT` is returned
 
+### Power
+
+Control a built in power supply. For now, this requires a Lunatone DALI USB 30 mA interface.
+
+```python
+    def power(self, power: bool = False) -> None:
+```
+
+**Parameters**
+
+* `power` : new power setting: `True` for power on, `False` for power off
 
 #### DaliFrame
 
