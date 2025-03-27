@@ -69,6 +69,10 @@ class DaliInterface:
         """Close object via context manager"""
         self.close()
 
+    def power(self, power: bool = False) -> None:
+        """Stub for controlling a built-in power supply."""
+        raise RuntimeError("subclass must implement power")
+
     def read_data(self) -> None:
         """Stub for reading data needs to be overwritten by an implementation."""
         raise NotImplementedError("subclass must implement read_data")

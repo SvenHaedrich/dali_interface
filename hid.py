@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 @typechecked
-class DaliUsb(DaliInterface):
+class DaliUsb(DaliInterface):  # pylint: disable=too-many-instance-attributes
     """Class for USB connected DALI interface."""
 
     _USB_VENDOR: Final[int] = 0x17B5
@@ -123,6 +123,15 @@ class DaliUsb(DaliInterface):
                 )
                 continue
 
+            logger.debug(
+                f"usb descriptor string[2]: {usb.util.get_string(self.device, 2)}"
+            )
+            self.integrated_power_supply = (
+                usb.util.get_string(self.device, 2) == "DALI USB with PS"
+            )
+            if self.integrated_power_supply:
+                logger.debug("device has integrated power supply")
+
             # read pending messages and discard
             super().__init__(start_receive=start_receive)
             try:
@@ -139,8 +148,10 @@ class DaliUsb(DaliInterface):
         raise usb.core.USBError("No suitable USB device found!")
 
     def power(self, power: bool = False) -> None:
-        """Control a built in power supply, requires a Lunatone DALI USB 30 mA interface"""
+        """Control a built-in power supply, requires a Lunatone DALI USB 30 mA interface"""
         logger.debug("control optional power supply")
+        if not self.integrated_power_supply:
+            raise RuntimeError("usb device must implement power")
         command = self._USB_CMD_POWER
         buffer = struct.pack(
             "BB" + (64 - 2) * "x",
