@@ -57,6 +57,7 @@ class DaliUsb(DaliInterface):  # pylint: disable=too-many-instance-attributes
     _USB_READ_TYPE_24BIT: Final[int] = 0x76
     _USB_READ_TYPE_INFO: Final[int] = 0x77
     _USB_READ_TYPE_17BIT: Final[int] = 0x78
+    _USB_READ_TYPE_32BIT: Final[int] = 0x7E
 
     _USB_STATUS_CHECKSUM: Final[int] = 0x01
     _USB_STATUS_SHORTED: Final[int] = 0x02
@@ -221,7 +222,7 @@ class DaliUsb(DaliInterface):  # pylint: disable=too-many-instance-attributes
         super().close()
         usb.util.dispose_resources(self.device)
 
-    def read_data(self) -> None:
+    def read_data(self) -> None:  # pylint: disable=too-many-branches
         """Read frame or event from USB DALI interface-"""
         try:
             usb_data = self.ep_read.read(self.ep_read.wMaxPacketSize, timeout=100)
@@ -244,6 +245,15 @@ class DaliUsb(DaliInterface):  # pylint: disable=too-many-instance-attributes
                     status = DaliStatus.FRAME
                     length = 24
                     dali_data = usb_data[5] + (usb_data[4] << 8) + (usb_data[3] << 16)
+                elif read_type == self._USB_READ_TYPE_32BIT:
+                    status = DaliStatus.FRAME
+                    length = 32
+                    dali_data = (
+                        usb_data[5]
+                        + (usb_data[4] << 8)
+                        + (usb_data[3] << 16)
+                        + (usb_data[2] << 24)
+                    )
                 elif read_type == self._USB_READ_TYPE_NO_FRAME:
                     status = DaliStatus.TIMEOUT
                     length = 0
